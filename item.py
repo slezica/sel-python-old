@@ -85,12 +85,12 @@ def make_regex_split(pattern):
     return split
 
 
-def default_printer(results):
+def default_print(results):
     for result in results:
         print ' '.join(result)
 
 
-def table_printer(results):
+def table_print(results):
     results  = list(map(list, results)) # Read entire input
     columns  = zip(*results) # Not evident, but zip() transposes 2d-lists
     colsizes = [max(map(len, column)) for column in columns]
@@ -133,11 +133,11 @@ if __name__ == '__main__':
 
     parser.add_argument('-t', '--table',
         action = 'store_const',
-        const  = table_printer,
+        const  = table_print,
         help   = "aligns columns (buffers input)"
     )
 
-    parser.add_argument('-c', '--columns',
+    parser.add_argument('-c', '--cols',
         metavar = 'column',
         nargs   = '+',
         help    = 'select columns by names (assumes header on input)'
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     input  = open(args.file) if args.file else sys.stdin
     splitf = args.regex or args.delim or default_split
     fields = args.fields
-    printf = args.table or default_printer
+    printf = args.table or default_print
 
     if args.skip_header and not args.cols:
         input.readline()
