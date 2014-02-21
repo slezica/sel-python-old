@@ -2,6 +2,10 @@
 
 A powerful command-line replacement for cut.
 
+- simpler syntax
+- cooler features
+- slower (oh well)
+
 # Simple
 
 `item` has a dead simple syntax backed by sensible defaults:

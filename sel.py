@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, itertools, functools, argparse, re
+import sys, itertools, argparse, re
 
 # -----
 # TOOLS
@@ -102,7 +102,7 @@ def table_print(results):
 
 
 
-if __name__ == '__main__':
+def run():
     parser = argparse.ArgumentParser(description='Extract fields from columns in input')
 
     parser.add_argument('fields',
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         help = "take input from file instead of stdin"
     )
 
-    parser.add_argument('-s', '--skip-header',
+    parser.add_argument('-s', '--skip-headers',
         action = 'store_true',
         help   = "skip the first line, assuming it's a table header"
     )
@@ -145,23 +145,34 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    input  = open(args.file) if args.file else sys.stdin
-    splitf = args.regex or args.delim or default_split
-    fields = args.fields
-    printf = args.table or default_print
-
-    if args.skip_header and not args.cols:
-        input.readline()
-
+    input   = open(args.file) if args.file else sys.stdin
+    splitf  = args.regex or args.delim or default_split
+    fields  = args.fields
+    printf  = args.table or default_print
+    
     if args.cols:
-        headers = splitf(input.readline())
-        indexed = { name: i for i, name in enumerate(headers) }
-        fields += [indexed[name] for name in args.cols if name in indexed]
+        headline = input.next()
+        headers  = splitf(headline)
+        indexed  = { name: i for i, name in enumerate(headers) }
+        fields  += [indexed[name] for name in args.cols if name in indexed]
+
+        # Push the headline back. Dirty, but not that dirty
+        input = itertools.chain([headline], input)
+
+    if args.skip_headers:
+        input.next()
 
     if not fields:
         parser.print_usage()
         print 'No fields, ranges or columns selected'
         sys.exit(2)
 
-    printf(work(input, fields, splitf))
+    results = work(input, fields, splitf)
 
+    try:
+        printf(results)
+    except IOError:
+        pass
+
+if __name__ == '__main__':
+    run()
