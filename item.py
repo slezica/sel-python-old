@@ -5,41 +5,48 @@ import sys, itertools, functools, argparse, re
 # TOOLS
 # -----
 
-def flatten(ranges):
+def flatten(fields):
     """ Flattens [1, 2, [3, 4], 5] into [1, 2, 3, 4, 5]. """
-    listified = (rg if isinstance(rg, list) else [rg] for rg in ranges)
+    listified = (rg if isinstance(rg, list) else [rg] for rg in fields)
     return itertools.chain(*listified)
 
-def clean(strings):
-    """ Removes blank strings from an iterable. """
-    return filter(len, map(str.strip, strings))
+def is_blank(string):
+    return len(string.strip()) > 0
+
+def getitem(lst, i, default = None):
+    return lst[i] if isinstance(i, slice) or len(lst) > i else default
 
 
-# -----------
-# ENTRY POINT
-# -----------
+# -------------
+# MAIN FUNCTION
+# -------------
 
-def main(input, ranges, split):
-    """ Performs the cutting and printing
-        input : a file-like stream
-        ranges: an iterable of valid list indexes (inc. slices)
-        split : the function used to separate items in input
-    """
+def work(input, indexes, splitf):
+    """ Performs the cutting and selecting
+        input  : an iterable of lines
+        indexes: an iterable of valid list indexes (int, slices)
+        splitf : the function used to separate fields in input
+    """ 
+
     for line in input:
-        items = clean(split(line))
-        print ' '.join(flatten(items[i] for i in ranges))
+        fields   = filter(is_blank, splitf(line))
+        selected = (getitem(fields, i, '') for i in indexes)
+        yield flatten(selected)
 
+# ----------------------
+# COMMAND-LINE INTERFACE
+# ----------------------
 
-
-def read_range(arg):
+def read_field(arg):
     """ Reads and returns an integer or slice.
-        Note that our slices are right-inclusive.
+        Indeces begin at 1 and slices are right-inclusive.
     """
     try:
         if ':' in arg:
-            bounds     = map(int, arg.split(':'))
-            bounds[0] -= 1
-            return slice(*bounds)
+            first, last = map(int, arg.split(':', 1))
+            first -= 1
+            if last < 0: last = (last + 1) or None
+            return slice(first, last)
             
         else:
             index = int(arg)
@@ -47,21 +54,21 @@ def read_range(arg):
 
     except Exception as e:
         raise argparse.ArgumentTypeError(
-            "Improper format in range '%s' (%s)" % (arg, e)
+            "Improper format in field '%s' (%s)" % (arg, e)
         )
 
 
 def default_split(line):
     return line.split()
 
-def delim_split(delimiter):
+def make_delim_split(delimiter):
     # This acts as type factory for argparse
     def split(line):
         return line.split(delimiter)
 
     return split
 
-def regex_split(pattern):
+def make_regex_split(pattern):
     try:
         regex = re.compile(pattern)
 
@@ -78,24 +85,41 @@ def regex_split(pattern):
     return split
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Extract items from columns in input')
+def default_printer(results):
+    for result in results:
+        print ' '.join(result)
 
-    parser.add_argument('ranges',
-        metavar ='range',
-        type    = read_range,
-        nargs   = '+',
-        help    = 'integer indexes or start:end:step ranges'
+
+def table_printer(results):
+    results  = list(map(list, results)) # Read entire input
+    columns  = zip(*results) # Not evident, but zip() transposes 2d-lists
+    colsizes = [max(map(len, column)) for column in columns]
+
+    for result in results:
+        for i, field in enumerate(result):
+            print '%-*s' % (colsizes[i], field),
+        print
+
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Extract fields from columns in input')
+
+    parser.add_argument('fields',
+        metavar ='field',
+        type    = read_field,
+        nargs   = '*',
+        help    = 'integer indexes or first:last ranges'
     )
 
     parser.add_argument('-r', '--regex',
-        type  = regex_split,
-        help  = "delimit items with a regular expression"
+        type = make_regex_split,
+        help = "delimit fields with a regular expression"
     )
 
     parser.add_argument('-d', '--delim',
-        type  = delim_split,
-        help  = "delimit items with a string"
+        type = make_delim_split,
+        help = "delimit fields with a string"
     )
 
     parser.add_argument('-f', '--file',
@@ -107,13 +131,37 @@ if __name__ == '__main__':
         help   = "skip the first line, assuming it's a table header"
     )
 
+    parser.add_argument('-t', '--table',
+        action = 'store_const',
+        const  = table_printer,
+        help   = "aligns columns (buffers input)"
+    )
+
+    parser.add_argument('-c', '--columns',
+        metavar = 'column',
+        nargs   = '+',
+        help    = 'select columns by names (assumes header on input)'
+    )
 
     args = parser.parse_args()
 
     input  = open(args.file) if args.file else sys.stdin
-    split  = args.regex or args.delim or default_split
-    ranges = args.ranges
-    
-    if args.skip_header: input.readline()
+    splitf = args.regex or args.delim or default_split
+    fields = args.fields
+    printf = args.table or default_printer
 
-    main(input, ranges, split)
+    if args.skip_header and not args.cols:
+        input.readline()
+
+    if args.cols:
+        headers = splitf(input.readline())
+        indexed = { name: i for i, name in enumerate(headers) }
+        fields += [indexed[name] for name in args.cols if name in indexed]
+
+    if not fields:
+        parser.print_usage()
+        print 'No fields, ranges or columns selected'
+        sys.exit(2)
+
+    printf(work(input, fields, splitf))
+
