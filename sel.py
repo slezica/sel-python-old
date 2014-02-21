@@ -16,6 +16,8 @@ def is_blank(string):
 def getitem(lst, i, default = None):
     return lst[i] if isinstance(i, slice) or len(lst) > i else default
 
+def int_or_none(value):
+    return int(value) if value else None
 
 # -------------
 # MAIN FUNCTION
@@ -43,8 +45,8 @@ def read_field(arg):
     """
     try:
         if ':' in arg:
-            first, last = map(int, arg.split(':', 1))
-            first -= 1
+            first, last = [int(i) if i else None for i in arg.split(':', 1)]
+            if first: first -= 1
             if last < 0: last = (last + 1) or None
             return slice(first, last)
             
@@ -87,7 +89,7 @@ def make_regex_split(pattern):
 
 def default_print(results):
     for result in results:
-        print ' '.join(result)
+        print ' '.join(result).strip()
 
 
 def table_print(results):
@@ -141,6 +143,12 @@ def run():
         metavar = 'column',
         nargs   = '+',
         help    = 'select columns by names (assumes header on input)'
+    )
+
+    parser.add_argument('-j', '--join',
+        metavar = 'join',
+        nargs   = '?',
+        help    = 'string to join output fields with (default: --delim or space)'
     )
 
     args = parser.parse_args()
