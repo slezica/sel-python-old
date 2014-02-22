@@ -92,7 +92,7 @@ def default_print(results):
         print ' '.join(result).strip()
 
 
-def table_print(results):
+def aligned_print(results):
     results  = list(map(list, results)) # Read entire input
     columns  = zip(*results) # Not evident, but zip() transposes 2d-lists
     colsizes = [max(map(len, column)) for column in columns]
@@ -133,9 +133,9 @@ def run():
         help   = "skip the first line, assuming it's a table header"
     )
 
-    parser.add_argument('-t', '--table',
+    parser.add_argument('-a', '--align',
         action = 'store_const',
-        const  = table_print,
+        const  = aligned_print,
         help   = "aligns columns (buffers input)"
     )
 
@@ -145,18 +145,18 @@ def run():
         help    = 'select columns by names (assumes header on input)'
     )
 
-    parser.add_argument('-j', '--join',
-        metavar = 'join',
-        nargs   = '?',
-        help    = 'string to join output fields with (default: --delim or space)'
-    )
+    # parser.add_argument('-j', '--join',
+    #     metavar = 'join',
+    #     nargs   = '?',
+    #     help    = 'string to join output fields with (default: --delim or space)'
+    # )
 
     args = parser.parse_args()
 
     input   = open(args.file) if args.file else sys.stdin
     splitf  = args.regex or args.delim or default_split
     fields  = args.fields
-    printf  = args.table or default_print
+    printf  = args.align or default_print
     
     if args.cols:
         headline = input.next()
