@@ -1,11 +1,6 @@
-if [[ ! $(which sel) ]]; then
-    sel() {
-        python sel.py "$@"
-    }
-    echo "Using python sel.py"
-else
-    echo "Using $(which sel)"
-fi
+sel() {
+    python sel.py "$@"
+}
 
 test() {
     runcmd="$@"

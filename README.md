@@ -3,6 +3,7 @@
 `sel` is an inline field selection and table transformation tool
 that aims to replace `cut`.
 
+    pip install sel
 
 ## Simple
 
