@@ -13,11 +13,11 @@ def flatten(fields):
 def is_blank(string):
     return len(string.strip()) > 0
 
+def is_exception(obj):
+    return isinstance(obj, Exception)
+
 def getitem(lst, i, default = None):
     return lst[i] if isinstance(i, slice) or len(lst) > i else default
-
-def int_or_none(value):
-    return int(value) if value else None
 
 # -------------
 # MAIN FUNCTION
@@ -32,7 +32,7 @@ def work(input, indexes, splitf):
 
     for line in input:
         fields   = filter(is_blank, splitf(line))
-        selected = (getitem(fields, i, '') for i in indexes)
+        selected = (getitem(fields, i, default = '') for i in indexes)
         yield flatten(selected)
 
 # ----------------------
@@ -47,7 +47,7 @@ def read_field(arg):
         if ':' in arg:
             first, last = [int(i) if i else None for i in arg.split(':', 1)]
             if first: first -= 1
-            if last < 0: last = (last + 1) or None
+            if last and last < 0: last = (last + 1) or None
             return slice(first, last)
             
         else:
@@ -55,7 +55,10 @@ def read_field(arg):
             return index - 1 if index > 0 else index
 
     except Exception as e:
-        raise argparse.ArgumentTypeError(
+        # Raising the exception here results in weird argparse behaviour
+        # when combining a non-existent flag and --cols. Yes, that.
+        # http://stackoverflow.com/questions/22107764/python-strange-error-behaviour-in-argparse
+        return argparse.ArgumentTypeError(
             "Improper format in field '%s' (%s)" % (arg, e)
         )
 
@@ -158,6 +161,9 @@ def run():
     fields  = args.fields
     printf  = args.align or default_print
     
+    for exception in filter(is_exception, fields):
+        raise exception
+
     if args.cols:
         headline = input.next()
         headers  = splitf(headline)
