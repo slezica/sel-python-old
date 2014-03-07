@@ -54,7 +54,7 @@ of table headers if present. It can also produce tabular outputs.
     user1
     user2
 
-    $ ps aux | sel --align --cols %MEM PID COMMAND 
+    $ ps aux | sel --align %MEM PID COMMAND 
     PID  COMMAND                          %MEM
     2414 /opt/google/chrome/chrome        1.7 
     5272 /opt/sublime_text_2/sublime_text 1.6 
