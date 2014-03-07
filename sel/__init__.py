@@ -1,11 +1,14 @@
 import sys, itertools
 import cli
 
-from tools import getitem, flatten, is_blank
+from tools import getitem, flatten, is_blank, file_by_lines
 
 
 def main():
     conf = cli.parse()
+
+    if isinstance(conf.input, file):
+        conf.input = file_by_lines(conf.input)
     
     # Columns specified by name require special treatment after we open
     # our input stream.
@@ -41,10 +44,7 @@ def sel(input, indexes, splitf):
         splitf : the function used to separate indexes in input
     """ 
 
-    while True:
-        line = input.readline()
-        if not line: break
-
+    for line in input:
         fields   = filter(is_blank, splitf(line))
         selected = (getitem(fields, i, default = '') for i in indexes)
         yield flatten(selected)

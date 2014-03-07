@@ -71,3 +71,14 @@ def aligned_print(results):
             print '%-*s' % (colsizes[i], field),
         print
 
+
+def file_by_lines(file):
+    # An open stdin cannot be iterated with `for..in...`, it will hang
+    # waiting for stdin to get an EOF.
+    # We replace it with a line iterable.
+    while True:
+        line = file.readline()
+        if line:
+            yield line
+        else:
+            break
