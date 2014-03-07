@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description='Extract columns from input')
 
 parser.add_argument('selectors',
     metavar ='selector',
-    nargs   = '*',
+    nargs   = '+',
     help    = 'integer indexes or first:last ranges'
 )
 

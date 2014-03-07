@@ -41,11 +41,17 @@ def sel(input, indexes, splitf):
         splitf : the function used to separate indexes in input
     """ 
 
-    for line in input:
+    while True:
+        line = input.readline()
+        if not line: break
+
         fields   = filter(is_blank, splitf(line))
         selected = (getitem(fields, i, default = '') for i in indexes)
         yield flatten(selected)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(1)

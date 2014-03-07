@@ -1,4 +1,4 @@
-import itertools
+import itertools, re
 
 def is_numeric(string):
     try   : return int(string) and True
